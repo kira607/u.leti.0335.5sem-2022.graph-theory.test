@@ -1,0 +1,14 @@
+digraph G {
+    KQS -> QSU [label=KQSU]
+    KQS -> QSQ [label=KQSQ]
+    QSU -> SUQ [label=QSUQ]
+    UQS -> QSU [label=UQSU]
+    UQS -> QSQ [label=UQSQ]
+    SQU -> QUQ [label=SQUQ]
+    SUQ -> UQS [label=SUQS]
+    SUQ -> UQU [label=SUQU]
+    QSQ -> SQU [label=QSQU]
+    QUQ -> UQS [label=QUQS]
+    QUQ -> UQU [label=QUQU]
+    UQU -> QUQ [label=UQUQ]
+}

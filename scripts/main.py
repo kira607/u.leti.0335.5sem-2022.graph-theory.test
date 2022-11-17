@@ -1,9 +1,10 @@
 import helpers
 import latex
+import task2
 
 
 def main():
-    pass
+    task2.solve()
 
 
 if __name__ == '__main__':

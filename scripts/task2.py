@@ -1,62 +1,38 @@
-import dataclasses
-
-from typing import Optional
-
-import graphviz
+from graph import Vertex, Edge, Graph
+from base_task import BaseTask
 
 
-@dataclasses.dataclass
-class Vertex:
-    name: str
-
-    @property
-    def prefix(self):
-        return self.name[:-1]
-
-    @property
-    def suffix(self):
-        return self.name[1:]
+def prefix(vertex: Vertex):
+    return vertex.name[:-1]
 
 
-@dataclasses.dataclass
-class Edge:
-    source: Vertex
-    dest: Vertex
-    
-    @property
-    def word(self):
-        return self.source.name[0] + self.source.suffix + self.dest.name[-1]
+def suffix(vertex: Vertex):
+    return vertex.name[1:]
 
 
-def check_merge(v1: Vertex, v2: Vertex) -> Optional[str]:
-    return None
+def word(edge: Edge):
+    return edge.v1.name[0] + suffix(edge.v1) + edge.v2.name[-1]
 
 
-def solve():
+class Task2(BaseTask):
+    def _solve(self) -> None:
+        vertices = [Vertex(name) for name in 'KQS, QSU, UQS, SQU, SUQ, QSQ, QUQ, UQU'.split(', ')]
+        edges = []
 
-    v = Vertex('ABC')
-    print(v, v.prefix, v.suffix)
+        for v1 in vertices:
+            for v2 in vertices:
+                if v1 == v2 or suffix(v1) != prefix(v2):
+                    continue
+                new_edge = Edge(v1, v2, directional=True)
+                new_edge.set_dot_attributes({'label': word(new_edge)})
+                edges.append(new_edge)
 
-    vertices = [Vertex(name) for name in 'KQS, QSU, UQS, SQU, SUQ, QSQ, QUQ, UQU'.split(', ')]
+        g = Graph(vertices, edges, directional=True)
+        print('resulting graph:')
+        print(g.dot)
+        print('words: ')
+        print(',\n'.join(word(edge) for edge in g.edges), '.', sep='')
 
-    edges = []
 
-    for v1 in vertices:
-        for v2 in vertices:
-            if v1 == v2:
-                continue
-            if v1.suffix != v2.prefix:
-                continue
-            edges.append(Edge(v1, v2))
-    
-    dot = 'digraph G {\n'
-    for v in vertices:
-        dot += f'    {v.name}\n'
-
-    for edge in edges:
-        dot += f'    {edge.source.name} -> {edge.dest.name} [label={edge.word}]\n'
-
-    dot += '}'
-
-    print(dot)
-
+def solve() -> None:
+    Task2(2).solve()

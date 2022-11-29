@@ -1,31 +1,33 @@
-from graph import Vertex as Vertex, Edge as Edge, Graph as Graph
 from base_task import BaseTask
+from graph.algorithms import ChromaticPolynomCreator
+from graph.helpers import mkg
 
 
 class Task3(BaseTask):
     def _solve(self) -> None:
-        g = Graph([Vertex(x) for x in 'ABCDEFGHIJKL'])
-        g.edges = [
-            Edge(g['A'], g['B']),
-            Edge(g['B'], g['D']),
-            Edge(g['C'], g['D']),
-            Edge(g['D'], g['E']),
-            Edge(g['C'], g['H']),
-            Edge(g['D'], g['H']),
-            Edge(g['E'], g['I']),
-            Edge(g['E'], g['J']),
-            Edge(g['F'], g['J']),
-            Edge(g['G'], g['H']),
-            Edge(g['H'], g['I']),
-            Edge(g['H'], g['K']),
-            Edge(g['I'], g['K']),
-            Edge(g['K'], g['L']),
-        ]
+        g = mkg(edges=[
+            ('A', 'B'),
+            ('B', 'D'),
+            ('C', 'D'),
+            ('D', 'E'),
+            ('C', 'H'),
+            ('D', 'H'),
+            ('E', 'I'),
+            ('E', 'J'),
+            ('F', 'J'),
+            ('G', 'H'),
+            ('H', 'I'),
+            ('H', 'K'),
+            ('I', 'K'),
+            ('K', 'L'),
+        ])
         print(g.dot)
-
-    def get_chromatic_polynom(self, graph):
-        pass
+        print(ChromaticPolynomCreator.get_chromatic_polynom(g))
 
 
 def solve() -> None:
     Task3(3).solve()
+
+
+if __name__ == '__main__':
+    solve()

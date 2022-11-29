@@ -9,3 +9,7 @@ class Task9(BaseTask):
 
 def solve() -> None:
     Task9(9).solve()
+
+
+if __name__ == '__main__':
+    solve()

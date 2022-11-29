@@ -9,3 +9,7 @@ class Task5(BaseTask):
 
 def solve() -> None:
     Task5(5).solve()
+
+
+if __name__ == '__main__':
+    solve()

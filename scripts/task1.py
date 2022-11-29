@@ -1,22 +1,21 @@
 from base_task import BaseTask
-from graph import Vertex as Vertex, Edge as Edge, Graph as Graph
-from graph.helpers import get_radius, get_diameter, get_centers
+from graph.algorithms import get_radius, get_diameter, get_centers
+from graph.helpers import mkg
 
 
 class Task1(BaseTask):
     def _solve(self) -> None:
-        g = Graph([Vertex(str(x)) for x in range(1, 11)])
-        g.edges = [
-            Edge(g['2'], g['3']),
-            Edge(g['4'], g['5']),
-            Edge(g['1'], g['6']),
-            Edge(g['2'], g['6']),
-            Edge(g['4'], g['6']),
-            Edge(g['4'], g['7']),
-            Edge(g['4'], g['9']),
-            Edge(g['5'], g['10']),
-            Edge(g['8'], g['9']),
-        ]
+        g = mkg(edges=[
+            ('2', '3'),
+            ('4', '5'),
+            ('1', '6'),
+            ('2', '6'),
+            ('4', '6'),
+            ('4', '7'),
+            ('4', '9'),
+            ('5', '10'),
+            ('8', '9'),
+        ])
 
         print(g.dot)
         print(f'{get_radius(g)=}')
@@ -24,6 +23,9 @@ class Task1(BaseTask):
         print(f'{get_centers(g)=}')
 
 
-
 def solve() -> None:
     Task1(1).solve()
+
+
+if __name__ == '__main__':
+    solve()

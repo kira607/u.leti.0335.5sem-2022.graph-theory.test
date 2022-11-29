@@ -1,5 +1,6 @@
 from graph import Vertex, Edge, Graph
 from base_task import BaseTask
+from scripts.graph.helpers import mkg
 
 
 def prefix(vertex: Vertex):
@@ -16,18 +17,16 @@ def word(edge: Edge):
 
 class Task2(BaseTask):
     def _solve(self) -> None:
-        vertices = [Vertex(name) for name in 'KQS, QSU, UQS, SQU, SUQ, QSQ, QUQ, UQU'.split(', ')]
-        edges = []
+        g = mkg('KQS, QSU, UQS, SQU, SUQ, QSQ, QUQ, UQU'.split(', '))
 
-        for v1 in vertices:
-            for v2 in vertices:
+        for v1 in g.vertices:
+            for v2 in g.vertices:
                 if v1 == v2 or suffix(v1) != prefix(v2):
                     continue
-                new_edge = Edge(v1, v2, directional=True)
+                new_edge = g.add_edge(v1, v2)
+                new_edge.directional = True
                 new_edge.set_dot_attributes({'label': word(new_edge)})
-                edges.append(new_edge)
 
-        g = Graph(vertices, edges, directional=True)
         print('resulting graph:')
         print(g.dot)
         print('words: ')
@@ -36,3 +35,7 @@ class Task2(BaseTask):
 
 def solve() -> None:
     Task2(2).solve()
+
+
+if __name__ == '__main__':
+    solve()

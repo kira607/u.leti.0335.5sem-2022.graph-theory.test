@@ -2,7 +2,7 @@ import pytest
 
 from .graph import Graph
 from .helpers import mkg
-from .algorithms import ChromaticPolynomCreator, is_full, is_null
+from .algorithms import ChromaticPolynomCreator, is_full, is_null, get_adjacent_vertices, is_tree
 
 
 @pytest.mark.parametrize(
@@ -113,11 +113,11 @@ def test_merge_edge(graph: Graph, v1, v2, expected_vertices, expected_edges):
         (mkg(['A', 'B']), None, 'K_{2} + K_{1}'),
         (mkg(['A', 'B']), 'O', 'O_{2}'),
         (mkg(edges=[('A', 'B')]), None, 'K_{2}'),
-        (mkg(edges=[('A', 'B')]), 'O', 'O_{2} - O_{1}'),
+        (mkg(edges=[('A', 'B')]), 'O', 'O_{2} + (-1.0) * O_{1}'),
         (
             mkg(edges=[('A', 'B'), ('A', 'D'), ('A', 'C'), ('C', 'D')]),
             'O',
-            'O_{4} - O_{3} - O_{3} - O_{2} - O_{3} - O_{2} - O_{3} - O_{2} - O_{2} - O_{1} - O_{2} - O_{1}',
+            'O_{4} + (-4.0) * O_{3} + (5.0) * O_{2} + (-2.0) * O_{1}',
         )
     ),
 )
@@ -127,42 +127,33 @@ def test_get_chromatic_polynom(graph: Graph, strategy, expected_polynom) -> None
 
 
 @pytest.mark.parametrize(
-    'raw_polynom, expected',
+    'graph, target_vertex, expected_vertices',
     (
-        (
-            [
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-            ],
-            'O_{1}',
-        ),
-        (
-            [
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-                ChromaticPolynomCreator.PolyToken('O_{1}', False),
-            ],
-            '(0) * O_{1}',
-        ),
-        (
-            [
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-            ],
-            '(2) * O_{1}',
-        ),
-        (
-            [
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-                ChromaticPolynomCreator.PolyToken('O_{1}'),
-                ChromaticPolynomCreator.PolyToken('O_{2}'),
-                ChromaticPolynomCreator.PolyToken('O_{2}'),
-                ChromaticPolynomCreator.PolyToken('O_{3}', False),
-                ChromaticPolynomCreator.PolyToken('O_{4}'),
-                ChromaticPolynomCreator.PolyToken('O_{5}', False),
-            ],
-            '(2) * O_{1} + (2) * O_{2} + O_{4} + -O_{3} + -O_{5}',
-        ),
+        (mkg(edges=[('a', 'b'), ('b', 'c'), ('a', 'c')]), 'a', {'b', 'c'}),
+        (mkg(['d'], [('a', 'b'), ('b', 'c'), ('a', 'c')]), 'd', set()),
+        (mkg(edges=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('e', 'a')]), 'a', {'b', 'c', 'd', 'e'}),
+        (mkg(edges=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('e', 'a')]), 'e', {'a'}),
     ),
 )
-def test_simplify_polynom(raw_polynom, expected):
-    simplified = ChromaticPolynomCreator.simplify_polynom(raw_polynom)
-    assert simplified == expected
+def test_get_adjacent_vertices(graph: Graph, target_vertex: str, expected_vertices: set[str]):
+    adjacent_vertices = get_adjacent_vertices(graph, graph.get_vertex(target_vertex))
+    assert {v.name for v in adjacent_vertices} == expected_vertices
+
+
+@pytest.mark.parametrize(
+    'graph, expected',
+    (
+        (mkg(), True),
+        (mkg(['a']), True),
+        (mkg(edges=[('a', 'b')]), True),
+        (mkg(edges=[('a', 'b'), ('b', 'c'), ('a', 'c')]), False),
+        (mkg(['d'], [('a', 'b'), ('b', 'c'), ('a', 'c')]), False),
+        (mkg(edges=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('e', 'a')]), True),
+        (mkg(edges=[('a', 'b'), ('a', 'c'), ('b', 'd'), ('b', 'e'), ('c', 'f')]), True),
+        (mkg(edges=[('a', 'b'), ('a', 'c'), ('b', 'd'), ('b', 'e'), ('c', 'b')]), False),
+        (mkg(['z'], [('a', 'b'), ('a', 'c'), ('b', 'd'), ('b', 'e'), ('c', 'f')]), False),
+    ),
+)
+def test_is_tree(graph: Graph, expected: bool) -> None:
+    graph_is_tree = is_tree(graph)
+    assert graph_is_tree == expected

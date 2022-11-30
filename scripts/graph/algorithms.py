@@ -1,10 +1,10 @@
-import re
-from collections import Counter, defaultdict
-from typing import Any, List, Set
+from typing import Any, List, Set, Optional, Iterable
 
 from .graph import Graph
+from .helpers import mkg
 from .infinity import inf, InfNum
 from .polynom.polynom import Polynom, PolyToken
+from .vertex import Vertex
 
 
 def get_adjacency_matrix(graph: Graph, no_path: Any, self_cross: Any) -> List[List[InfNum]]:
@@ -98,7 +98,20 @@ def is_full(graph: Graph) -> bool:
     return len(graph.edges) == get_number_of_edges_to_be_full(graph)
 
 
-def get_not_adjacent_vertices(graph) -> list[tuple[str, str]]:
+def get_adjacent_vertices(graph: Graph, vertex: Vertex) -> List[Vertex]:
+    adjacent_vertices = []
+    for v in graph:
+        e = graph.get_edge(vertex.name, v.name, None)
+        if e is None:
+            continue
+        if e.v1 == vertex:
+            adjacent_vertices.append(e.v2)
+        elif e.v2 == vertex:
+            adjacent_vertices.append(e.v1)
+    return adjacent_vertices
+
+
+def get_not_adjacent_vertices(graph: Graph) -> list[tuple[str, str]]:
     not_adjacent_vertices = []
     for v1 in graph:
         for v2 in graph:
@@ -170,3 +183,95 @@ class ChromaticPolynomCreator:
         left = cls._get_chromatic_polynom(g1, next_strategy)
         right = cls._get_chromatic_polynom(g2, next_strategy)
         return left + right
+
+
+def is_cycled(
+    graph: Graph,
+    current_vertex: Vertex,
+    visited: dict[Vertex, bool],
+    parent_vertex: Optional[Vertex] = None
+) -> bool:
+    visited[current_vertex] = True
+
+    adjacent_vertices = get_adjacent_vertices(graph, current_vertex)
+    for adjacent_vertex in adjacent_vertices:
+        if not visited.get(adjacent_vertex):
+            if is_cycled(graph, adjacent_vertex, visited, current_vertex):
+                return True
+        elif adjacent_vertex != parent_vertex:
+            return True
+
+    return False
+
+
+def is_tree(graph: Graph) -> bool:
+    if len(graph) <= 2:
+        return True
+
+    visited = {vertex: False for vertex in graph.vertices}
+
+    if is_cycled(graph, graph.vertices[0], visited):
+        return False
+
+    # make sure that all vertices are visited
+    return all(visited.values())
+
+
+class TreeNode:
+    def __init__(self, number: int, parent: 'TreeNode' = None, children: list['TreeNode'] = None):
+        self.number = number
+        self.parent = parent
+        self.children = children or []
+
+
+def get_leafs(tree: TreeNode, collected=None):
+    if not tree.children:
+        return [tree]
+
+    collected = collected or []
+
+    for child in tree.children:
+        collected += get_leafs(child, collected)
+
+    return collected
+
+
+def get_prufer_code(graph: Graph, root: Vertex):
+    if not is_tree(graph):
+        raise ValueError(f'Graph is not a tree: {repr(graph)}')
+
+    tree = TreeNode(int(root.name))
+    stack = [(tree, root)]
+    while stack:
+        node, vertex = stack.pop()
+        children = get_adjacent_vertices(graph, vertex)
+        if node.parent:
+            children.remove(graph.get_vertex(str(node.parent.number)))
+        for child_vertex in children:
+            child_node = TreeNode(int(child_vertex.name), node)
+            node.children.append(child_node)
+            stack.append((child_node, child_vertex))
+
+    code = []
+    while len(code) < len(graph) - 2:
+        leafs = get_leafs(tree)
+        min_leaf = min(leafs, key=lambda leaf: leaf.number)
+        parent = min_leaf.parent
+        code.append(parent.number)
+        parent.children.remove(min_leaf)
+
+    return code
+
+
+def graph_from_prufer_code(code: list[int]) -> Graph:
+    available_vertices = [i for i in range(1, len(code) + 3)]
+    edges = []
+    for i, v1 in enumerate(code):
+        left_in_code = code[i:]
+        not_in_code = [v for v in available_vertices if v not in left_in_code]
+        v2 = min(not_in_code)
+        available_vertices.remove(v2)
+        edges.append((str(v1), str(v2)))
+    edges.append((str(available_vertices[0]), str(available_vertices[1])))
+
+    return mkg(edges=edges)

@@ -17,5 +17,6 @@ class Vertex(DotAttributesMixin):
     def __hash__(self) -> int:
         return hash(self.name)
 
-    def _get_dot_string(self) -> str:
-        return f'"{self.name}"'
+    @property
+    def dot(self) -> str:
+        return f'"{self.name}" {self._get_attributes_string()}'

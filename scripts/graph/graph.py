@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Optional
+from typing import Any
 
 from .missing import MISSING
 from .edge import Edge
@@ -8,16 +8,14 @@ from .vertex import Vertex
 
 class Graph:
     '''
-    A class representing a graph.
+    A class representing a non-directional graph.
 
     Stores graph as a collection of vertices and edges
     '''
-    def __init__(self, *edges: tuple[str, str], label: str = 'G'):
+    def __init__(self, label: str = 'G'):
         self._label = label
         self._vertices: dict[str, Vertex] = {}
         self._edges: dict[tuple[str, str], Edge] = {}
-        for v1, v2 in edges:
-            self.add_edge(v1, v2)
 
     def __len__(self):
         return len(self._vertices)
@@ -33,7 +31,7 @@ class Graph:
         return self._label
 
     @property
-    def vertices(self) -> tuple[Vertex]:
+    def vertices(self) -> tuple[Vertex, ...]:
         return tuple(self._vertices.values())
 
     @property
@@ -91,7 +89,7 @@ class Graph:
         '''
         Merge edge (l, r).
 
-        Removes (l, r) edge and r vertex.
+        Removes (l, r) edge and ``r`` vertex.
         All edges connected to ``r`` are reconnected to ``l``.
         '''
         merge_edge = self.get_edge(l, r, None)
@@ -122,7 +120,7 @@ class Graph:
         dot = f'{name} {self.label} {{\n'
 
         for vertex in self.vertices:
-            dot += f'     {vertex.name}\n'
+            dot += f'     {vertex.dot}\n'
 
         for edge in self.edges:
             dot += f'    {edge.dot}\n'

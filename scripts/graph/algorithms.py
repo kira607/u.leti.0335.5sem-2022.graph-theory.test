@@ -21,7 +21,7 @@ def get_adjacency_matrix(graph: Graph, no_path: Any, self_cross: Any) -> List[Li
 
     for row, v1 in enumerate(graph.vertices):
         for col, v2 in enumerate(graph.vertices):
-            edge = graph.get_edge(v1.name, v2.name, None)
+            edge = graph.get_edge(v1.name, v2.name, default=None)
 
             if edge is None:
                 val = self_cross if row == col else no_path
@@ -115,7 +115,7 @@ def get_not_adjacent_vertices(graph: Graph) -> list[tuple[str, str]]:
     not_adjacent_vertices = []
     for v1 in graph:
         for v2 in graph:
-            if graph.get_edge(v1.name, v2.name, None):
+            if graph.get_edge(v1.name, v2.name, default=None):
                 continue
             if v1 == v2:
                 continue

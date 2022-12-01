@@ -1,8 +1,8 @@
 from copy import deepcopy
-from typing import Any, Union
+from typing import Any, Optional
 
-from .missing import MISSING
 from .edge import Edge
+from .missing import MISSING
 from .types import StrConvertable
 from .vertex import Vertex
 
@@ -13,6 +13,9 @@ class Graph:
 
     Stores graph as a collection of vertices and edges
     '''
+
+    _dot_name = 'graph'
+
     def __init__(self, label: str = 'G'):
         self._label = label
         self._vertices: dict[str, Vertex] = {}
@@ -62,12 +65,11 @@ class Graph:
             return
         del self._vertices[name]
 
-    def get_edge(self, v1: StrConvertable, v2: StrConvertable, strict_order: bool = False, default: Any = MISSING) -> Edge:
-        v1, v2 = str(v1), str(v2)
-        if self._edges.get((v1, v2), None):
-            return self._edges[(v1, v2)]
-        elif self._edges.get((v2, v1), None) and not strict_order:
-            return self._edges[(v2, v1)]
+    def get_edge(self, v1: StrConvertable, v2: StrConvertable, default: Any = MISSING) -> Edge:
+        key = self._get_edge_key(v1, v2)
+
+        if key:
+            return self._edges[key]
         elif default is MISSING:
             raise KeyError(f'Edge ({v1}, {v2}) is not present in the graph: {repr(self)}.')
         else:
@@ -84,15 +86,13 @@ class Graph:
         return edge
 
     def remove_edge(self, v1: StrConvertable, v2: StrConvertable) -> None:
-        v1, v2 = str(v1), str(v2)
-        key = v1, v2
+        key = self._get_edge_key(v1, v2)
         exists = self.get_edge(*key)
+
         if exists is MISSING:
             raise RuntimeError(f'Could not find edge {key} in {self.dot}')
-        if self._edges.get(key):
-            del self._edges[key]
-        else:
-            del self._edges[key[::-1]]
+
+        del self._edges[key]
 
     def merge_edge(self, v1: str, v2: str) -> None:
         '''
@@ -101,7 +101,7 @@ class Graph:
         Removes (l, r) edge and ``r`` vertex.
         All edges connected to ``r`` are reconnected to ``l``.
         '''
-        merge_edge = self.get_edge(v1, v2, None)
+        merge_edge = self.get_edge(v1, v2, default=None)
         if not merge_edge:
             return
         v1, v2 = merge_edge.v1, merge_edge.v2
@@ -120,32 +120,12 @@ class Graph:
         self.remove_edge(v1.name, v2.name)
         self.remove_vertex(v2.name)
 
-    def in_degree(self, v: StrConvertable) -> int:
-        v2 = self.get_vertex(v)
-        in_degree = 0
-        for v1 in self.vertices:
-            edge = self.get_edge(v1.name, v2.name, default=None)
-            if not edge:
-                continue
-            in_degree += 1
-        return in_degree
-
-    def out_degree(self, v: StrConvertable) -> int:
-        v1 = self.get_vertex(v)
-        out_degree = 0
-        for v2 in self.vertices:
-            edge = self.get_edge(v1.name, v2.name, True, None)
-            if not edge:
-                continue
-            out_degree += 1
-        return out_degree
-
     def copy(self) -> 'Graph':
         return deepcopy(self)
 
     @property
     def dot(self):
-        name = 'graph'
+        name = self._dot_name
         dot = f'{name} {self.label} {{\n'
 
         for vertex in self.vertices:
@@ -157,3 +137,12 @@ class Graph:
         dot += '}'
 
         return dot
+
+    def _get_edge_key(self, v1: StrConvertable, v2: StrConvertable) -> Optional[tuple[str, str]]:
+        v1, v2 = str(v1), str(v2)
+        if self._edges.get((v1, v2), None):
+            return v1, v2
+        elif self._edges.get((v2, v1), None):
+            return v2, v1
+        else:
+            return None

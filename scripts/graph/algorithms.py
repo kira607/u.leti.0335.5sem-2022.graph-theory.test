@@ -101,7 +101,7 @@ def is_full(graph: Graph) -> bool:
 def get_adjacent_vertices(graph: Graph, vertex: Vertex) -> List[Vertex]:
     adjacent_vertices = []
     for v in graph:
-        e = graph.get_edge(vertex.name, v.name, None)
+        e = graph.get_edge(vertex.name, v.name, default=None)
         if e is None:
             continue
         if e.v1 == vertex:
@@ -223,20 +223,19 @@ class TreeNode:
         self.parent = parent
         self.children = children or []
 
+    def get_leaves(self, collected=None):
+        if not self.children:
+            return [self]
 
-def get_leafs(tree: TreeNode, collected=None):
-    if not tree.children:
-        return [tree]
+        collected = collected or []
 
-    collected = collected or []
+        for child in self.children:
+            collected += child.get_leaves(collected)
 
-    for child in tree.children:
-        collected += get_leafs(child, collected)
-
-    return collected
+        return collected
 
 
-def get_prufer_code(graph: Graph, root: Vertex):
+def graph_to_tree(graph: Graph, root: Vertex) -> TreeNode:
     if not is_tree(graph):
         raise ValueError(f'Graph is not a tree: {repr(graph)}')
 
@@ -252,15 +251,116 @@ def get_prufer_code(graph: Graph, root: Vertex):
             node.children.append(child_node)
             stack.append((child_node, child_vertex))
 
+    return tree
+
+
+def tree_to_dot(tree: TreeNode):
+    edges = _tree_to_dot(tree)
+    return mkg(edges=edges).dot
+
+
+def _tree_to_dot(tree: TreeNode, collected=None):
+    if not tree.children:
+        return []
+
+    collected = collected or []
+
+    for child in tree.children:
+        collected.append((tree.number, child.number))
+        collected.extend(_tree_to_dot(child))
+
+    return collected
+
+
+def get_prufer_code(graph: Graph, root: Vertex) -> list[int]:
+    tree = graph_to_tree(graph, root)
     code = []
     while len(code) < len(graph) - 2:
-        leafs = get_leafs(tree)
+        leafs = tree.get_leaves()
         min_leaf = min(leafs, key=lambda leaf: leaf.number)
         parent = min_leaf.parent
         code.append(parent.number)
         parent.children.remove(min_leaf)
 
     return code
+
+
+class PruferCodeCreator:
+
+    @classmethod
+    def get_prufer_code(cls, graph: Graph, root: Vertex) -> list[int]:
+        graph = graph.copy()
+        code_len = len(graph) - 2
+        code = []
+        while len(code) < code_len:
+            leafs = cls.get_graph_leaves(graph, root, root)
+            min_leaf = min(leafs, key=lambda leaf: int(leaf.name))
+            parent = cls.get_parent(graph, root, min_leaf)
+            code.append(int(parent.name))
+
+            graph.remove_edge(parent.name, min_leaf.name)
+            graph.remove_vertex(min_leaf.name)
+
+        return code
+
+    @classmethod
+    def get_graph_leaves(cls, graph: Graph, root: Vertex, vertex: Vertex, collected=None) -> list[Vertex]:
+        children = cls.get_children(graph, root, vertex)
+        if not children:
+            return [vertex]
+
+        collected = collected or []
+
+        for child in children:
+            collected += cls.get_graph_leaves(graph, root, child, collected)
+
+        return collected
+
+    @classmethod
+    def get_children(cls, graph: Graph, root: Vertex, vertex: Vertex) -> list[Vertex]:
+        adjacent = get_adjacent_vertices(graph, vertex)
+        parent = cls.get_parent(graph, root, vertex)
+        if parent:
+            adjacent.remove(parent)
+        return adjacent
+
+    @classmethod
+    def get_parent(cls, graph: Graph, root: Vertex, vertex: Vertex) -> Optional[Vertex]:
+        if root == vertex:
+            return None
+
+        adjacent_vertices = get_adjacent_vertices(graph, vertex)
+        min_dist = 999999999
+        parent = None
+        for v in adjacent_vertices:
+            d = cls.get_root_distance(graph, root, v)
+            if d <= min_dist:
+                min_dist = d
+                parent = v
+        return parent
+
+    @classmethod
+    def get_root_distance(cls, graph: Graph, root: Vertex, vertex: Vertex) -> int:
+        distance = 0
+        if root == vertex:
+            return distance
+        previous_layer = [(None, root)]
+        while True:
+            distance += 1
+
+            this_layer = []
+
+            for parent, v in previous_layer:
+                children = get_adjacent_vertices(graph, v)
+                if parent in children:
+                    children.remove(parent)
+                this_layer.extend([(v, child) for child in children])
+
+            for _, child in this_layer:
+                if child == vertex:
+                    return distance
+
+            previous_layer = this_layer
 
 
 def graph_from_prufer_code(code: list[int]) -> Graph:
